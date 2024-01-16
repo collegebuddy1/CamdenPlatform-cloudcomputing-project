@@ -1,0 +1,61 @@
+
+import org.apache.tools.ant.taskdefs.condition.Os
+
+plugins {
+  id "com.moowork.node" version "1.2.0"
+}
+
+node {
+  version = '8.11.3'
+  npmVersion = '5.6.0'
+  download = true
+  // Set the work directory for unpacking node
+ workDir = file("${project.buildDir}/Sapient/nodejs")
+
+ // Set the work directory for NPM
+ npmWorkDir = file("${project.buildDir}/Sapient/npm")
+}
+
+ext {
+  nodeBinDir = null
+}
+
+task installForever(type: NpmTask, dependsOn: npmInstall) {
+  args = ['install', 'forever', '-g']
+  doLast {
+    nodeBinDir = runner.variant.nodeBinDir
+  }
+}
+
+task sapientStartDaemon(dependsOn: installForever) {
+  doLast{
+    exec{
+      if (Os.isFamily(Os.FAMILY_WINDOWS)){
+        commandLine 'cmd', '/c', "${nodeBinDir}/npm run build"
+      }
+      else {
+        commandLine "${nodeBinDir}/npm", 'run', 'build'
+      }
+    }
+  }
+}
+
+task sapientStopDaemon(dependsOn: installForever) {
+  doLast{
+    exec{
+      if (Os.isFamily(Os.FAMILY_WINDOWS)){
+        commandLine 'cmd', '/c', "${nodeBinDir}/npm stop"
+      }
+      else {
+        commandLine "${nodeBinDir}/npm", 'stop'
+      }
+      ignoreExitValue true
+    }
+  }
+}
+
+task manualFrontEndStart(dependsOn: sapientStartDaemon){
+}
+
+task manualFrontEndStop(dependsOn: sapientStopDaemon){
+}
